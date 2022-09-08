@@ -3,15 +3,16 @@ import numpy as np
 from time import sleep
 
 
-def preprocess(img, scale = .5):
+# makes the image more suitable for object detection by converting it to grayscale and resizing it (smaller image allows smaller kernel and faster computing)
+def preprocess(img, scale = 0.5):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) # RGB => B/W
     img = cv2.resize(img, (int(img.shape[1] * scale), int(img.shape[0] * scale))) # X x Y => X * scale x Y * scale
-    img = cv2.GaussianBlur(img, (3, 3), sigmaX=0, sigmaY=0) # blur image
     return img
 
+# descrizione funzione
 def isolatePlate(img):
     # Highlight plate in white with thick black edges
-    mask = cv2.Canny(img, 35, 35 / 3)
+    edges = cv2.Canny(img, 125, 100) # Canny detection of edges
     kernel = np.ones((8, 8))
     mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel)
     mask = np.bitwise_not(mask)
@@ -50,25 +51,4 @@ def isolateBall(img, debug_img=None):
         # cx /= img.shape[1]
         # cy /= img.shape[0]
 
-    return cx, cy, debug_img
-
-
-video = cv2.VideoCapture(0)
-
-while True:
-    _, frame = video.read()
-    
-    if frame is None:
-        break
-    
-    frame = preprocess(frame)
-    preview = frame
-    frame = isolatePlate(frame)
-    cx, cy, preview = isolateBall(frame, debug_img = preview)
-    
-    cv2.imshow("Frame", frame)
-    cv2.imshow("Preview", preview)
-    cv2.waitKey(1)
-    
-video.release()
-cv2.destroyAllWindows()    
+    return cx, cy, debug_img 
