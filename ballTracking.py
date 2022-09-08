@@ -9,21 +9,19 @@ def preprocess(img, scale = 0.5):
     img = cv2.resize(img, (int(img.shape[1] * scale), int(img.shape[0] * scale))) # X x Y => X * scale x Y * scale
     return img
 
-# descrizione funzione
+# highlights everything in img that is not the plate in white, leaving the plate visible (edge detection, matrix manipulation)
 def isolatePlate(img):
-    # Highlight plate in white with thick black edges
-    edges = cv2.Canny(img, 125, 100) # Canny detection of edges
-    kernel = np.ones((8, 8))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_DILATE, kernel)
-    mask = np.bitwise_not(mask)
-    # Get convex hull of the biggest white area
-    cnts, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    cnts = sorted(cnts, key = cv2.contourArea, reverse = True)
-    cnt = cnts[0]
-    cnt = cv2.convexHull(cnt, False)
-    # Set everything outside the plate as pure white
-    mask = cv2.drawContours(mask * 0, [cnt], -1, 255, -1)
-    img[mask != 255] = 255
+    edges = cv2.Canny(img, 125, 100) # Canny detection of edges, thresholds for hysteresis thresholding determined experimentally
+    edges = cv2.morphologyEx(edges, cv2.MORPH_DILATE, np.ones((8, 8))) # morphological dilation of pixels near edges [edges => white]
+    inverseEdges = np.bitwise_not(edges) # [edges => black]
+    
+    contours, _ = cv2.findContours(inverseEdges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # finds contours of white shapes in inverseEdges
+    contours = sorted(contours, key = cv2.contourArea, reverse = True) # orders contours by area they include
+    plateContour = contours[0] # plate's contour will be be the biggest one among contours (if the setup is correct)
+    
+    plate = cv2.convexHull(plateContour, False) # finds precise plate shape
+    plateMask = cv2.drawContours(inverseEdges * 0, [plate], -1, 255, -1) # draws plate on pitch black background same size as img
+    img[plateMask != 255] = 255 # everything that is not plate is pitch black (plateMask over img and all that's 0 becomes 255)
     return img
 
 def isolateBall(img, debug_img=None):
