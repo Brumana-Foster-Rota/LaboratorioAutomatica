@@ -1,5 +1,6 @@
 import cv2
 import numpy as np
+import math
 from time import sleep
 
 
@@ -9,11 +10,13 @@ def preprocess(img, scale = 0.5):
     img = cv2.resize(img, (int(img.shape[1] * scale), int(img.shape[0] * scale))) # X x Y => X * scale x Y * scale
     return img
 
-# highlights everything in img that is not the plate in white, leaving the plate visible (edge detection, matrix manipulation)
+# makes everything in img that is not the plate white, leaving the plate visible (edge detection, matrix manipulation)
 def isolatePlate(img):
     edges = cv2.Canny(img, 125, 100) # Canny detection of edges, thresholds for hysteresis thresholding determined experimentally
     edges = cv2.morphologyEx(edges, cv2.MORPH_DILATE, np.ones((8, 8))) # morphological dilation of pixels near edges [edges => white]
     inverseEdges = np.bitwise_not(edges) # [edges => black]
+    
+    #dilatazione originale a 8
     
     contours, _ = cv2.findContours(inverseEdges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE) # finds contours of white shapes in inverseEdges
     contours = sorted(contours, key = cv2.contourArea, reverse = True) # orders contours by area they include
@@ -24,29 +27,19 @@ def isolatePlate(img):
     img[plateMask != 255] = 255 # everything that is not plate is pitch black (plateMask over img and all that's 0 becomes 255)
     return img
 
-def isolateBall(img, debug_img=None):
-    # Find darkest pixels and erode them a bit to
-    # cancel out any line or stick inside the image
-    _, img = cv2.threshold(img, np.median(img) * .25, 255, cv2.THRESH_BINARY_INV)
-    kernel = np.ones((3, 3))
-    img = cv2.morphologyEx(img, cv2.MORPH_ERODE, kernel)
-    # Find average pixel coords, if there is any
-    idxs = np.argwhere(img == 255)
-    cx = cy = None
-    if len(idxs) > 0:
-        cy, cx = np.mean(idxs, axis=0)
-        # Render image  with crosshair for debugging purposes
-        if debug_img is not None:
-            if len(debug_img.shape) == 2:
-                debug_img = cv2.cvtColor(debug_img, cv2.COLOR_GRAY2BGR)
-            ball_area = debug_img * 0
-            debug_img[img == 255] = [255, 0,  0]
-            # debug_img = cv2.addWeighted(debug_img, 1, ball_area, 1, 0)
-            debug_img = cv2.line(debug_img, (int(cx), 0), (int(
-                cx), debug_img.shape[0]), (255, 255, 255), thickness=2)
-            debug_img = cv2.line(debug_img, (0, int(
-                cy)), (debug_img.shape[1], int(cy)), (255, 255, 255), thickness=2)
-        # cx /= img.shape[1]
-        # cy /= img.shape[0]
+# descr funz
+def isolateBall(img):
+    _, thresholdedImg = cv2.threshold(img, np.median(img) * .4, 255, cv2.THRESH_BINARY_INV) # inverse thresholding of img, ball will come out white
+    thresholdedImg = cv2.morphologyEx(thresholdedImg, cv2.MORPH_ERODE, np.ones((3, 3))) # morphological erosion of black pixels to remove possible black spots
+    
+    # median coordinates of white pixels (only the ball will be white at this point) [img matrix row => plate Y]
+    ballArea = np.argwhere(thresholdedImg == 255)
+    ballX = ballY = None
+    imgDebug = thresholdedImg
+    if len(ballArea) > 0:
+        ballY, ballX = np.mean(ballArea, axis = 0)
+        # add coordinates to RGB image (above ball)
+        imgDebug = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+        imgDebug = cv2.putText(imgDebug, "(" + str(round(ballX, 2)) + ", " + str(round(ballY, 2)) + ")", (int(ballX), int(ballY)), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (255, 0, 0))
 
-    return cx, cy, debug_img 
+    return ballX, ballY, img, imgDebug
