@@ -13,10 +13,10 @@ import matplotlib.pyplot as plt
 servoX = AngularServo(17, pin_factory = PiGPIOFactory(), min_angle = -90, max_angle = 90, max_pulse_width = 0.00255, min_pulse_width = 0.0004)
 servoY = AngularServo(27, pin_factory = PiGPIOFactory(), min_angle = -90, max_angle = 90, max_pulse_width = 0.00255, min_pulse_width = 0.0004)
 
-PROP = 4.5 # 1.1 (in realt 5.5 con altri valori default ha performato bene)
-Kp = 0.675 # 0.03 * .7 * PROP
-Ki = 0 # 0.012 * 2.2 * PROP
-Kd = 0 # 0.01875 * 3.5 * PROP
+PROP = 5.5 # 1.1 (in realt 5.5 con altri valori default ha performato bene)
+Kp = 0.03 * .7 * PROP
+Ki = 0.012 * 2.2 * PROP
+Kd = 0.01875 * 3.5 * PROP
 #valori da provare con la mediana
 # PROP = 4.5
 # Kp = 1
@@ -30,14 +30,13 @@ controllerY.output_limits = (-90, 90)
 
 ballXs = []
 ballYs = []
-times = []
+timestamps = []
 
 
 video = cv2.VideoCapture(0)
 
-i = 0
-input("Press a key to start getting fucked by this balance your ugly ass balls type machine")
-while i < 500: # while true:
+input("Place a ball on the plate and press a key to start the balancing control:")
+while True:
     _, img = video.read()
     
     while img is None:
@@ -59,7 +58,7 @@ while i < 500: # while true:
         # for plotting
         ballXs.append(ballX)
         ballYs.append(ballY)
-        times.append(int(time.time()))
+        timestamps.append(int(time.time()))
         
         
         controllerX.setpoint = targetX
@@ -71,14 +70,13 @@ while i < 500: # while true:
         servoY.angle = controlY
         
         
-        plt.plot(times, ballXs, '-')
+        #plt.plot(times, ballXs, '-')
         
     
     cv2.imshow("Debug", imgDebug)
     cv2.waitKey(1)
-    i = i + 1
 
 video.release()
 cv2.destroyAllWindows()
 
-plt.show()
+#plt.show()
