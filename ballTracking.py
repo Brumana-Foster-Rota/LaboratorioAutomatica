@@ -11,6 +11,7 @@ def preprocess(img, scale = 0.5):
     
     return img
 
+
 # makes everything in img that is not the plate white, leaving the plate visible and returning the coordinates of its center
 def isolatePlate(img):
     edges = cv2.Canny(img, 125, 100) # Canny detection of edges, thresholds for hysteresis thresholding determined experimentally
@@ -27,8 +28,8 @@ def isolatePlate(img):
     
     plateCenterY, plateCenterX = np.mean(platePoints, axis = 0)
     img[plateMask != 255] = 255 # everything that is not plate is pitch white (plateMask over img and all that's 0 becomes 255)
-    
     return plateCenterX, plateCenterY, img
+
 
 # isolates the ball from the plate and returns its coordinates both in numerical and graphical form for debugging 
 def isolateBall(img):
