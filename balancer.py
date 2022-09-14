@@ -68,6 +68,10 @@ while True:
         previousControlX.append(controlX)
         previousControlY.append(controlY)
         
+        if len(previousControlX) >= 2:
+            controlX = np.mean(previousControlX[-4 : len(previousControlX)])
+            controlY = np.mean(previousControlY[-4 : len(previousControlY)])
+        
         servoX.angle = controlX
         servoY.angle = controlY
         
