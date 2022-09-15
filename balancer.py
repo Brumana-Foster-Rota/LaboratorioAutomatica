@@ -50,7 +50,7 @@ while True:
     else:
         _, _, img = isolatePlate(img)
         
-    ballX, ballY, img, imgDebug = isolateBall(img, plateMask)
+    ballX, ballY, img, imgDebug = isolateBall(img)
     
     # add control target to debug image
     imgDebug = cv2.line(imgDebug, (int(targetX) - 10, int(targetY)), (int(targetX) + 10, int(targetY)), (0, 255, 0), thickness = 1)
@@ -58,30 +58,40 @@ while True:
     
     
     # balancing control
-    if ballX is not None and ballY is not None:
-        previousBallX.append(ballX)
-        previousBallY.append(ballY)
+    if ballX is None:
+        if len(previousBallX) >= 1:
+            ballX = previousBallX[len(previousBallX) - 1]
+        else:
+            ballX = 135
         
-        controlX = controllerX(ballX)
-        controlY = controllerY(ballY)
+    if ballY is None:
+        if len(previousBallY) >= 1:
+            ballY = previousBallY[len(previousBallY) - 1]
+        else:
+            ballY = 135
+        
+    previousBallX.append(ballX)
+    previousBallY.append(ballY)
 
-        previousControlX.append(controlX)
-        previousControlY.append(controlY)
+    controlX = controllerX(ballX)
+    controlY = controllerY(ballY)
+    
+    previousControlX.append(controlX)
+    previousControlY.append(controlY)
         
 #         if len(previousControlX) >= 3:
 #             controlX = np.mean(previousControlX[-3 : len(previousControlX)])
 #             controlY = np.mean(previousControlY[-3 : len(previousControlY)])
         
-        servoX.angle = controlX
-        servoY.angle = controlY
+    servoX.angle = controlX
+    servoY.angle = controlY
         
-        # add control input to debug image
-        imgDebug = cv2.putText(imgDebug, "setpointX - ballX: " + str(round(controllerX.setpoint - ballX, 2)) + " | setpointY - ballY: " + str(round(controllerY.setpoint - ballY, 2)), (int(imgDebug.shape[1] / 3), int(imgDebug.shape[0] - 30)), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255))
-        imgDebug = cv2.putText(imgDebug, "X: " + str(round(controlX, 2)) + ", Y: " + str(round(controlY, 2)), (int(imgDebug.shape[1] / 2), int(imgDebug.shape[0] - 15)), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255))
+    # add control input to debug image
+    imgDebug = cv2.putText(imgDebug, "setpointX - ballX: " + str(round(controllerX.setpoint - ballX, 2)) + " | setpointY - ballY: " + str(round(controllerY.setpoint - ballY, 2)), (int(imgDebug.shape[1] / 3), int(imgDebug.shape[0] - 30)), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255))
+    imgDebug = cv2.putText(imgDebug, "X: " + str(round(controlX, 2)) + ", Y: " + str(round(controlY, 2)), (int(imgDebug.shape[1] / 2), int(imgDebug.shape[0] - 15)), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (0, 0, 255))
 
     
     cv2.imshow("Debug", imgDebug)
-    cv2.imshow("Edges", edges)
     cv2.waitKey(1)
 
 

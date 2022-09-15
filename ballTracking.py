@@ -29,19 +29,38 @@ def isolatePlate(img):
     return plateCenterX, plateCenterY, img
 
 
+# key for sorting list of detected balls in isolateBall
+def ballRadius(ball):
+     return ball[0][2]
+
 # isolates the ball from the plate and returns its coordinates both in numerical and graphical form for debugging 
-def isolateBall(img, plateMask):
-    _, thresholdedImg = cv2.threshold(img, np.median(img) * .4, 255, cv2.THRESH_BINARY_INV) # inverse thresholding of img, ball will come out white
+def isolateBall(img):  
+    ballX = ballY = None
+    imgDebug = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
+    
+    # recommended parameters for ball detection + radius limitation for excluding fake positives
+    balls = cv2.HoughCircles(img, cv2.HOUGH_GRADIENT, 1, 20, param1 = 50, param2 = 30, minRadius = 0, maxRadius = 16)
+    if balls is not None:        
+        balls = sorted(balls, key = ballRadius, reverse = True) # first ball in list => biggest ball
+        ballX = balls[0][0][0]
+        ballY = balls[0][0][1]
+        # add coordinates to RGB image for debugging (above ball)
+        imgDebug = cv2.putText(imgDebug, "(" + str(round(ballX, 2)) + ", " + str(round(ballY, 2)) + ")", (int(ballX), int(ballY)), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (255, 0, 0))
+
+    return ballX, ballY, img, imgDebug
+
+# isolates the ball from the plate and returns its coordinates both in numerical and graphical form for debugging 
+def isolateBallV1(img):
+    _, thresholdedImg = cv2.threshold(img, np.median(img) * 0.1, 255, cv2.THRESH_BINARY_INV) # inverse thresholding of img, ball will come out white
     thresholdedImg = cv2.morphologyEx(thresholdedImg, cv2.MORPH_ERODE, np.ones((3, 3))) # morphological erosion of black pixels to remove possible black spots
     
     # median coordinates of white pixels (only the ball will be white at this point) [img matrix row => plate Y]
     ballArea = np.argwhere(thresholdedImg == 255)   
     ballX = ballY = None
-    imgDebug = img
+    imgDebug = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
     if len(ballArea) > 0:
         ballY, ballX = np.mean(ballArea, axis = 0)
         # add coordinates to RGB image for debugging (above ball)
-        imgDebug = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
         imgDebug = cv2.putText(imgDebug, "(" + str(round(ballX, 2)) + ", " + str(round(ballY, 2)) + ")", (int(ballX), int(ballY)), cv2.FONT_HERSHEY_SIMPLEX, 0.25, (255, 0, 0))
-
+    
     return ballX, ballY, img, imgDebug
