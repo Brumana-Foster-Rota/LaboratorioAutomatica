@@ -1,7 +1,5 @@
 import cv2
 import numpy as np
-import math
-from time import sleep
 
 
 # makes the image more suitable for object detection by converting it to grayscale and resizing it (smaller image allows smaller kernel and faster computing)
@@ -32,12 +30,12 @@ def isolatePlate(img):
 
 
 # isolates the ball from the plate and returns its coordinates both in numerical and graphical form for debugging 
-def isolateBall(img):
+def isolateBall(img, plateMask):
     _, thresholdedImg = cv2.threshold(img, np.median(img) * .4, 255, cv2.THRESH_BINARY_INV) # inverse thresholding of img, ball will come out white
     thresholdedImg = cv2.morphologyEx(thresholdedImg, cv2.MORPH_ERODE, np.ones((3, 3))) # morphological erosion of black pixels to remove possible black spots
     
     # median coordinates of white pixels (only the ball will be white at this point) [img matrix row => plate Y]
-    ballArea = np.argwhere(thresholdedImg == 255)
+    ballArea = np.argwhere(thresholdedImg == 255)   
     ballX = ballY = None
     imgDebug = img
     if len(ballArea) > 0:

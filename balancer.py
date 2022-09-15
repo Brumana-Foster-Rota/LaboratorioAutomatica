@@ -13,15 +13,15 @@ servoY = AngularServo(27, pin_factory = PiGPIOFactory(), min_angle = -90, max_an
 
 
 # determined via tests
-Kp = 0.53 
-Ki = 0.15 
-Kd = 0.27
+Kp = 0.65
+Ki = 0 #0.15 
+Kd = 0.19#0.28
 
 # setpoint yet to determine
 controllerX = PID(Kp, Ki, Kd, sample_time = 0.0001)
-controllerX.output_limits = (-35, 35)
+controllerX.output_limits = (-45, 45)
 controllerY = PID(Kp, Ki, Kd, sample_time = 0.0001)
-controllerY.output_limits = (-35, 35)
+controllerY.output_limits = (-45, 45)
 
 previousBallX = []
 previousBallY = []
@@ -50,7 +50,7 @@ while True:
     else:
         _, _, img = isolatePlate(img)
         
-    ballX, ballY, img, imgDebug = isolateBall(img)
+    ballX, ballY, img, imgDebug = isolateBall(img, plateMask)
     
     # add control target to debug image
     imgDebug = cv2.line(imgDebug, (int(targetX) - 10, int(targetY)), (int(targetX) + 10, int(targetY)), (0, 255, 0), thickness = 1)
@@ -68,9 +68,9 @@ while True:
         previousControlX.append(controlX)
         previousControlY.append(controlY)
         
-        if len(previousControlX) >= 2:
-            controlX = np.mean(previousControlX[-4 : len(previousControlX)])
-            controlY = np.mean(previousControlY[-4 : len(previousControlY)])
+#         if len(previousControlX) >= 3:
+#             controlX = np.mean(previousControlX[-3 : len(previousControlX)])
+#             controlY = np.mean(previousControlY[-3 : len(previousControlY)])
         
         servoX.angle = controlX
         servoY.angle = controlY
@@ -81,6 +81,7 @@ while True:
 
     
     cv2.imshow("Debug", imgDebug)
+    cv2.imshow("Edges", edges)
     cv2.waitKey(1)
 
 
