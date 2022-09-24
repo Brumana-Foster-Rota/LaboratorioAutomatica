@@ -5,6 +5,7 @@ from ballTracking import preprocess, isolatePlate, isolateBall
 from gpiozero.pins.pigpio import PiGPIOFactory
 from gpiozero import AngularServo
 from simple_pid import PID
+from math import pi, cos, sin
 
 
 # needs daemon pigpio to be running: on this machine it starts on startup
@@ -13,15 +14,18 @@ servoY = AngularServo(27, pin_factory = PiGPIOFactory(), min_angle = -90, max_an
 
 
 # determined via tests
-Kp = 0.6
-Ki = 0.375
-Kd = 0.3
+Kp = 0.6 * 1.1
+Ki = 0.375 * 1.1
+Kd = 0.3 * 1.1
 
 # setpoint yet to determine
 controllerX = PID(Kp, Ki, Kd, sample_time = 0.0001)
 controllerX.output_limits = (-45, 45)
 controllerY = PID(Kp, Ki, Kd, sample_time = 0.0001)
 controllerY.output_limits = (-45, 45)
+
+angleDeg = 0
+circleRadius = 60
 
 previousBallX = []
 previousBallY = []
@@ -39,36 +43,24 @@ while True:
     while img is None:
         pass    
     
-    # detection of ball and center of plate if first execution (plate will be perfectly level on that occasion)
     img = preprocess(img)
-    
-    if setup:
-        # setpoint = center of plate
-#         targetX, targetY, img = isolatePlate(img) # recalculating center every time generates very variable setpoint which makes control noisy
-        
-        # setpoint = arbitrary
-        plateCenterX, plateCenterY, img = isolatePlate(img)
-        targetX = 115 # 115, 175
-        targetY = 90 # 90, 180
-        # rescaling of output limits in order to prevent saturation when distant from setpoint (foggy theory but it works)
-        controllerX.output_limits = (-45 * targetX / plateCenterX, 45 * plateCenterX / targetX)
-        controllerY.output_limits = (-45 * targetY / plateCenterY, 45 * plateCenterY / targetY)
-
-
-        controllerX.setpoint = targetX
-        controllerY.setpoint = targetY
-        setup = False
-    else:
-        _, _, img = isolatePlate(img)
-        
+    plateCenterX, plateCenterY, img = isolatePlate(img)
     ballX, ballY, img, imgDebug = isolateBall(img)
+    
+    angleDeg = (angleDeg + 1) % 360
+    angleRad = angleDeg * pi / 180
+    targetX = plateCenterX + circleRadius * cos(angleRad)
+    targetY = plateCenterY + circleRadius * sin(angleRad)
+    
+    controllerX.setpoint = targetX
+    controllerY.setpoint = targetY
     
     # add control target to debug image
     imgDebug = cv2.line(imgDebug, (int(targetX) - 10, int(targetY)), (int(targetX) + 10, int(targetY)), (0, 255, 0), thickness = 1)
     imgDebug = cv2.line(imgDebug, (int(targetX), int(targetY) - 10), (int(targetX), int(targetY) + 10), (0, 255, 0), thickness = 1)   
     
     
-    # balancing control
+    # circling control
     if ballX is None:
         if len(previousBallX) >= 1:
             ballX = previousBallX[len(previousBallX) - 1]
