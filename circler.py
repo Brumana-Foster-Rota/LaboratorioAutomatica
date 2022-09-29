@@ -14,9 +14,9 @@ servoY = AngularServo(27, pin_factory = PiGPIOFactory(), min_angle = -90, max_an
 
 
 # determined via tests
-Kp = 0.6 * 1.1
-Ki = 0.375 * 1.1
-Kd = 0.3 * 1.1
+Kp = 0.6 * 1.5
+Ki = 0#0.375 * 1.1
+Kd = 0.3 * 1.5
 
 # setpoint yet to determine
 controllerX = PID(Kp, Ki, Kd, sample_time = 0.0001)
@@ -47,13 +47,18 @@ while True:
     plateCenterX, plateCenterY, img = isolatePlate(img)
     ballX, ballY, img, imgDebug = isolateBall(img)
     
+    
     angleDeg = (angleDeg + 1) % 360
     angleRad = angleDeg * pi / 180
     targetX = plateCenterX + circleRadius * cos(angleRad)
     targetY = plateCenterY + circleRadius * sin(angleRad)
     
+    controllerX.output_limits = (-45 * targetX / plateCenterX, 45 * plateCenterX / targetX)
+    controllerY.output_limits = (-45 * targetY / plateCenterY, 45 * plateCenterY / targetY)
+    
     controllerX.setpoint = targetX
     controllerY.setpoint = targetY
+    
     
     # add control target to debug image
     imgDebug = cv2.line(imgDebug, (int(targetX) - 10, int(targetY)), (int(targetX) + 10, int(targetY)), (0, 255, 0), thickness = 1)

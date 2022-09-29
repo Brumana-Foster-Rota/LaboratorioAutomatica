@@ -14,7 +14,7 @@ servoY = AngularServo(27, pin_factory = PiGPIOFactory(), min_angle = -90, max_an
 
 # determined via tests
 Kp = 0.6
-Ki = 0.375
+Ki = 0.3
 Kd = 0.3
 
 # setpoint yet to determine
@@ -44,15 +44,20 @@ while True:
     
     if setup:
         # setpoint = center of plate
-#         targetX, targetY, img = isolatePlate(img) # recalculating center every time generates very variable setpoint which makes control noisy
+        targetX, targetY, img = isolatePlate(img) # recalculating center every time generates very variable setpoint which makes control noisy
         
-        # setpoint = arbitrary
-        plateCenterX, plateCenterY, img = isolatePlate(img)
-        targetX = 115 # 115, 175
-        targetY = 90 # 90, 180
-        # rescaling of output limits in order to prevent saturation when distant from setpoint (foggy theory but it works)
-        controllerX.output_limits = (-45 * targetX / plateCenterX, 45 * plateCenterX / targetX)
-        controllerY.output_limits = (-45 * targetY / plateCenterY, 45 * plateCenterY / targetY)
+#         # setpoint = arbitrary
+#         plateCenterX, plateCenterY, img = isolatePlate(img)
+#         targetX = 175# 115, 175
+#         targetY = 90 # 90, 180
+#         
+#         # rescaling of output limits in order to prevent saturation when distant from setpoint (foggy theory but it works)
+#         controllerX.output_limits = (-45 * targetX / plateCenterX, 45 * plateCenterX / targetX)
+#         controllerY.output_limits = (-45 * targetY / plateCenterY, 45 * plateCenterY / targetY)
+#         
+#         # struggles with integral action!
+#         controllerX.Ki = 0
+#         controllerY.Ki = 0
 
 
         controllerX.setpoint = targetX
@@ -73,13 +78,13 @@ while True:
         if len(previousBallX) >= 1:
             ballX = previousBallX[len(previousBallX) - 1]
         else:
-            ballX = 135
+            ballX = targetX
         
     if ballY is None:
         if len(previousBallY) >= 1:
             ballY = previousBallY[len(previousBallY) - 1]
         else:
-            ballY = 135
+            ballY = targetY
         
     previousBallX.append(ballX)
     previousBallY.append(ballY)
